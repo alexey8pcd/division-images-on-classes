@@ -16,7 +16,9 @@ using namespace cv;
 #define GAMMA 0.50625
 #define C_PARAM 312.5
 #define VOCABULARY "vocabulary"
-#define SMV_CLASSIFIER_NAME "birds1"
+#define SMV_CLASSIFIER_NAME "classifier1"
+#define UNKNOWN_CLASS_LABEL -1
+#define UNKNOWN_CLASS_NAME "unknown class"
 
 class Classifier
 {
@@ -28,14 +30,17 @@ class Classifier
         QString dictionaryPath = "D:/Study/2 semester/CV/division-images-on-classes/dictionary.yml";
         QString classifierStorePath;
         vector<string> getAllImageNamesFromDirectory(QString directoryPath);
+        vector<string> classes;
         int clustersCount;
+        int determineClassLabel(const string &imageName);
     public:
 
-        Classifier(QString classifierStorePath);
+        Classifier();
         void setTrainingDirectoryPath(const QString path);
         void setTestDirectoryPath(const QString path);
         void setDictionaryPath(const QString path);
         void setClassifierStorePath(const QString path);
+        void addClassName(const string className);
 
         void buildDictionary();
         void train();

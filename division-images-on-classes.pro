@@ -11,8 +11,7 @@ SOURCES += main.cpp \
     classifier.cpp
 
 HEADERS += \
-    classifier.h \
-    classes.h
+    classifier.h
 
 INCLUDEPATH += D:/Storage/Programs/Libraries/opencv/build/install/include
 LIBS += D:/Storage/Programs/Libraries/opencv/build/bin/*.dll

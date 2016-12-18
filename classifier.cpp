@@ -1,9 +1,8 @@
 #include "classifier.h"
-#include "classes.h"
 
-Classifier::Classifier(QString classifierStorePath) {
+Classifier::Classifier() {
     this->clustersCount = DEFAULT_CLUSTERS_COUNT;
-    this->classifierStorePath = classifierStorePath;
+    this->classes = vector<string>();
 }
 
 vector<string> Classifier::getAllImageNamesFromDirectory(QString directoryPath){
@@ -23,6 +22,16 @@ vector<string> Classifier::getAllImageNamesFromDirectory(QString directoryPath){
     return imageNames;
 }
 
+int Classifier::determineClassLabel(const string &imageName){
+    for (int i = 0; i < classes.size(); ++i) {
+        string className = classes.at(i);
+        if(imageName.find(className.data()) != string::npos){
+            return i;
+        }
+    }
+    return UNKNOWN_CLASS_LABEL;
+}
+
 void Classifier::setTrainingDirectoryPath(const QString path) {
     this->trainingDirectoryPath = path;
 }
@@ -37,6 +46,10 @@ void Classifier::setDictionaryPath(const QString path){
 
 void Classifier::setClassifierStorePath(const QString path) {
     this->classifierStorePath = path;
+}
+
+void Classifier::addClassName(const string className){
+    classes.push_back(className);
 }
 
 void Classifier::buildDictionary(){
@@ -90,15 +103,8 @@ void Classifier::train() {
         Mat bowDescriptor;
         bowDescriptorExtractor.compute(image, keyPoints, bowDescriptor);
         trainingData.push_back(bowDescriptor);
-        if (imageName.find(CLASS_EGRET_PREFIX) != string::npos){
-            labels.push_back(CLASS_EGRET_LABEL);
-        } else if (imageName.find(CLASS_OWL_PREFIX) != string::npos) {
-            labels.push_back(CLASS_OWL_LABEL);
-        } else if (imageName.find(CLASS_TOUCAN_PREFIX) != string::npos) {
-            labels.push_back(CLASS_TOUCAN_LABEL);
-        } else {
-            labels.push_back(CLASS_UNKNOWN_LABEL);
-        }
+        int label = determineClassLabel(imageName);
+        labels.push_back(label);
         ++count;
         cout << count << "/" << total << endl;
     }
@@ -146,32 +152,26 @@ void Classifier::testDivide() {
     vector<int> compression_params;
     compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
     compression_params.push_back(100);
+    char separatorChar = QDir::separator().toLatin1();
+    string separator(1, separatorChar);
     for (string imageName: testImagesNames) {
         const Mat image = imread(imageName, CV_LOAD_IMAGE_GRAYSCALE);
         surfDetector.detect(image, keyPoints2);
         Mat bowDescriptor;
         bowDescriptorExtractor.compute(image, keyPoints2, bowDescriptor);
         int classLabel = svmClassifier.predict(bowDescriptor);
-        string className = CLASS_UNKNOWN;
-        switch(classLabel){
-            case CLASS_EGRET_LABEL:
-                className = CLASS_EGRET_PREFIX;
-                break;
-            case CLASS_OWL_LABEL:
-                className = CLASS_OWL_PREFIX;
-                break;
-            case CLASS_TOUCAN_LABEL:
-                className = CLASS_TOUCAN_PREFIX;
-                break;
+        string className = UNKNOWN_CLASS_NAME;
+        if (classLabel > UNKNOWN_CLASS_LABEL) {
+            className = classes.at(classLabel);
         }
-        int index = imageName.find_last_of('//');
+        int index = imageName.find_last_of(QDir::separator().toLatin1());
         string simpleName = imageName;
         if(index != string::npos){
             simpleName = imageName.substr(index + 1);
         }
         string resultPath = testDirectoryPath.toStdString()+
                                 RESULT_DIRECTORY.toStdString()
-                            + className + "/" + simpleName;
+                            + className + separator + simpleName;
         bool writed = imwrite(resultPath, image, compression_params);
         if (writed){
             cout << "Write image " << resultPath << endl;
